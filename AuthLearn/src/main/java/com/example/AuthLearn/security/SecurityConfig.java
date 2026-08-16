@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,9 +30,11 @@ public class SecurityConfig {
 
     //added third
     private CustomUserDetailService userDetailService;
+    private JwtAuthenticationPoint jwtAuthenticationPoint;
     @Autowired
-    public SecurityConfig(CustomUserDetailService userDetailService) {
+    public SecurityConfig(CustomUserDetailService userDetailService,JwtAuthenticationPoint jwtAuthenticationPoint) {
         this.userDetailService = userDetailService;
+        this.jwtAuthenticationPoint=jwtAuthenticationPoint;
     }
 
     @Bean
@@ -40,8 +43,15 @@ public class SecurityConfig {
         http
 
                 .csrf(csrf -> csrf.disable())
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationPoint))
+
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                .anyRequest().authenticated()).httpBasic(org.springframework.security.config.Customizer.withDefaults());
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                .anyRequest().authenticated());
+                //).httpBasic(org.springframework.security.config.Customizer.withDefaults());
 
 
         return http.build();
@@ -71,6 +81,7 @@ public class SecurityConfig {
         }
 
         //part 5
+   @Bean
     PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }

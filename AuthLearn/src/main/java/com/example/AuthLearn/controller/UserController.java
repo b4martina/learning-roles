@@ -2,10 +2,13 @@ package com.example.AuthLearn.controller;
 
 
 import com.example.AuthLearn.dto.RegisterRequest;
+import com.example.AuthLearn.dto.RegisterResponse;
 import com.example.AuthLearn.model.Roles;
 import com.example.AuthLearn.model.User;
 import com.example.AuthLearn.repository.RoleRepository;
 import com.example.AuthLearn.repository.UserRepository;
+import com.example.AuthLearn.security.JWTGenerator;
+import com.example.AuthLearn.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,35 +25,39 @@ import java.util.Collections;
 @RequestMapping("/api/auth")
 public class UserController {
     private AuthenticationManager authenticationManager;
+    private UserService userService ;
     private UserRepository userRepository;
     private RoleRepository roleRepository;
             private PasswordEncoder passwordEncoder;
 
+            private JWTGenerator jwtGenerator;
+
     @Autowired
-    public UserController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JWTGenerator jwtGenerator, UserService userService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtGenerator =jwtGenerator;
+        this.userService =userService;
     }
 
 
-    @PostMapping("/register")
-    public ResponseEntity     <String> register (@RequestBody RegisterRequest registerRequest){
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return new ResponseEntity<>("Username is taken!", HttpStatus.BAD_REQUEST);
+    @PostMapping("/registere")
+    public ResponseEntity <?> register (@RequestBody RegisterRequest registerRequest){
+        System.out.println("REGISTER controller HIT");
+
+     /* idk   RegisterResponse registerResponse = userService.register(registerRequest);
+        return  ResponseEntity.ok(registerResponse);*/
+
+        try {
+
+            RegisterResponse registerResponse= userService.register(registerRequest);
+            return ResponseEntity.ok(registerResponse);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        User user = new User();
-        user.setUsername(registerRequest.getUsername());
-        user.setPassword(passwordEncoder.encode((registerRequest.getPassword())));
-
-        Roles roles = roleRepository.findByRoleName("USER").get();
-        user.setRoles(Collections.singletonList(roles));
-
-        userRepository.save(user);
-
-        return new ResponseEntity<>("User registered success!", HttpStatus.OK);
     }
 
 }
